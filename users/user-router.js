@@ -1,86 +1,91 @@
-const express = require("express");
+const userRouter = require("express").Router();
+const UsersModel = require("./user-model");
 
-const db = require("../data/db-config.js");
-
-const router = express.Router();
-
-router.get("/", (req, res) => {
-  db("users")
-    .then(users => {
+// // --> GET /api/users <-- // //
+userRouter.get("/", (req, res) => {
+  UsersModel.getUsers()
+    .then((users) => {
       res.json(users);
     })
-    .catch(err => {
+    .catch((err) => {
       res.status(500).json({ message: "Failed to get users" });
     });
 });
 
-router.get("/:id", (req, res) => {
-  const { id } = req.params;
+// // --> GET /api/users/:id <-- // //
+userRouter.get("/:id", (req, res) => {
+  const req_id = req.params.id;
 
-  db("users")
-    .where({ id })
-    .then(users => {
-      const user = users[0];
-
-      if (user) {
-        res.json(user);
-      } else {
-        res.status(404).json({ message: "Could not find user with given id." });
-      }
+  UsersModel.getUserByID(req_id)
+    .then((user) => {
+      user
+        ? res.status(200).json(user)
+        : res
+            .status(404)
+            .json({ message: `Could not find user with id: ${req_id}` });
     })
-    .catch(err => {
-      res.status(500).json({ message: "Failed to get user" });
+    .catch((err) => {
+      err.message
+        ? res.status(500).json({ error: err.message })
+        : res.status(500).json({ message: `Its not you, its me` });
     });
 });
 
-router.post("/", (req, res) => {
+// // --> POST /api/users <-- // //
+userRouter.post("/", (req, res) => {
   const userData = req.body;
-
-  db("users")
-    .insert(userData, "id")
-    .then(ids => {
-      res.status(201).json({ created: ids[0] });
+  UsersModel.addUser(userData)
+    .then((added_user) => {
+      added_user
+        ? res.status(201).json({ added_user })
+        : res
+            .status(201)
+            .json({ message: "thats weird...no added_user to give ya" });
     })
-    .catch(err => {
-      res.status(500).json({ message: "Failed to create new user" });
+    .catch((err) => {
+      err.message
+        ? res.status(500).json({ error: err.message })
+        : res.status(500).json({ message: "Failed to create new user" });
     });
 });
 
-router.put("/:id", (req, res) => {
-  const { id } = req.params;
+// // --> PUT /api/users/:id <-- // //
+userRouter.put("/:id", (req, res) => {
+  const req_id = req.params.id;
   const changes = req.body;
 
-  db("users")
-    .where({ id })
-    .update(changes)
-    .then(count => {
-      if (count) {
-        res.json({ update: count });
-      } else {
-        res.status(404).json({ message: "Could not find user with given id" });
-      }
+  UsersModel.updateUser(req_id, changes)
+    .then((updated) => {
+      updated
+        ? res.json({ updated })
+        : res
+            .status(404)
+            .json({ message: `Could not find user with id: ${req_id}` });
     })
-    .catch(err => {
-      res.status(500).json({ message: "Failed to update user" });
+    .catch((err) => {
+      err.message
+        ? res.status(500).json({ error: err.message })
+        : res.status(500).json({ message: "Failed to update user" });
     });
 });
 
-router.delete("/:id", (req, res) => {
-  const { id } = req.params;
+// // --> DELETE /api/users/:id <-- // //
+userRouter.delete("/:id", (req, res) => {
+  const req_id = req.params.id;
 
-  db("users")
-    .where({ id })
-    .del()
-    .then(count => {
-      if (count) {
-        res.json({ removed: count });
-      } else {
-        res.status(404).json({ message: "Could not find user with given id" });
-      }
+  UsersModel.deleteUser(req_id)
+    .then((deleted) => {
+      deleted
+        ? res.json({ deleted })
+        : res
+            .status(404)
+            .json({ message: `Could not find user with id: ${req_id}` });
     })
-    .catch(err => {
-      res.status(500).json({ message: "Failed to delete user" });
+    .catch((err) => {
+      err.message
+        ? res.status(500).json({ error: err.message })
+        : res.status(500).json({ message: "Failed to update user" });
     });
 });
 
-module.exports = router;
+module.exports = userRouter;
